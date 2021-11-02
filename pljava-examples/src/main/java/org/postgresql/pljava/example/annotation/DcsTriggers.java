@@ -21,7 +21,10 @@ import static org.postgresql.pljava.annotation.Trigger.Scope.*;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Map;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.postgresql.pljava.TriggerData;
 import org.postgresql.pljava.annotation.Function;
 import org.postgresql.pljava.annotation.Trigger;
@@ -52,6 +55,7 @@ public class DcsTriggers
 	@Function(
 		schema = "public",
 		security = INVOKER,
+		// trust = Trust.UNSANDBOXED,
 		triggers = {
 			@Trigger(called = BEFORE, scope = ROW, table = "dcs_plugin",
 					 events = { INSERT, UPDATE } )
@@ -64,8 +68,24 @@ public class DcsTriggers
 		String table_description = nrs.getString("table_description");
 		String envs = nrs.getString("envs");
 		String vars = nrs.getString("vars");
-		// nrs.updateString( "username", "bob");
+		try {
+			Map<String, Object> vm = new JSONObject(vars).toMap();
+			Map<String, Object> em = new JSONObject(envs).toMap();
+			Map<String, Object> tm = new JSONObject(table_description).toMap();
+		} catch (JSONException e) {
+			throw new SQLException(e.getMessage());
+		}
+		// nrs.updateString("envs", "bob");
+		// Map<String, Object> json = new HashMap<>();
+		// json.put("key", "value");
+		// json.put("array", Arrays.asList("1", "2"));
+		// nrs.updateString("executable_tpl", envs.getClass().getName() + "," + vars.getClass().getName() + ","); # always string.
+		// nrs.updateString("executable_tpl", envs + "," + vars );
 	}
+
+	// public static void main(String[] args) {
+
+	// }
 
 
 }
