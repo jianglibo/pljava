@@ -26,7 +26,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -149,7 +148,15 @@ public class DcsTriggers {
     String vars = nrs.getString("vars");
     try {
       new JSONObject(envs);
+    } catch (JSONException e) {
+      throw new SQLException("*** env field must be a JSON object. or leave it default. ***");
+    }
+    try {
       new JSONObject(vars);
+    } catch (JSONException e) {
+      throw new SQLException("*** vars field must be a JSON object. or leave it default. ***");
+    }
+    try {
       JSONObject description = new JSONObject(table_description);
       JSONArray columns = description.getJSONArray("columns");
       if (columns.length() == 0) {
@@ -191,21 +198,27 @@ public class DcsTriggers {
     String column_map_str = nrs.getString("column_map");
     String vars = nrs.getString("vars");
     String cron = nrs.getString("cron");
-//     System.out.println("cron: " + cron);
+    //     System.out.println("cron: " + cron);
     if (cron != null) {
       Instant now = Instant.now();
       CronExpression ce = CronExpression.create(cron);
       Instant next = ce.next(now, ZoneId.systemDefault());
       Instant next2 = ce.next(next, ZoneId.systemDefault());
-//       System.out.println("next: " + next + ", next2: " + next2);
+      //       System.out.println("next: " + next + ", next2: " + next2);
       long gap = Duration.between(next, next2).toMinutes();
-//       System.out.println("gap: " + gap);
+      //       System.out.println("gap: " + gap);
       if (gap < 10L) {
-        throw new SQLException("cron gap cannot be less than 10 minutes.");
+        throw new SQLException(
+            "cron gap cannot be less than 10 minutes. current gap is:" + gap + "minutes.");
       }
     }
+
     try {
       new JSONObject(vars);
+    } catch (JSONException e) {
+      throw new SQLException("*** vars field must be a JSON object. or leave it default. ***");
+    }
+    try {
       JSONObject column_map = new JSONObject(column_map_str);
 
       if (column_map.length() == 0) {
