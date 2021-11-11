@@ -15,17 +15,24 @@ package org.postgresql.pljava.example.annotation;
 
 import static org.postgresql.pljava.annotation.Function.Security.*;
 import static org.postgresql.pljava.annotation.Trigger.Called.*;
-import static org.postgresql.pljava.annotation.Trigger.Constraint.*;
+// import static org.postgresql.pljava.annotation.Trigger.Constraint.*;
 import static org.postgresql.pljava.annotation.Trigger.Event.*;
 import static org.postgresql.pljava.annotation.Trigger.Scope.*;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -52,6 +59,8 @@ import org.postgresql.pljava.annotation.Trigger;
  * invoking tests from outside PL/Java itself.
  */
 public class DcsTriggers {
+
+  private static String m_url = "jdbc:default:connection";
   // /**
   //  * insert user name in response to a trigger.
   //  */
@@ -142,6 +151,7 @@ public class DcsTriggers {
             events = {INSERT, UPDATE})
       })
   public static void validateDscPlugin(TriggerData td) throws SQLException {
+
     ResultSet nrs = td.getNew(); // expect NPE in a DELETE/STATEMENT trigger
     String table_description = nrs.getString("table_description");
     String envs = nrs.getString("envs");
@@ -224,12 +234,38 @@ public class DcsTriggers {
       if (column_map.length() == 0) {
         throw new SQLException(COLUMN_MAP_ERROR_MESSAGE);
       }
-      column_map
-          .keys()
-          .forEachRemaining(
-              k -> {
-                column_map.getString(k);
-              });
+
+      List<String> cmap_values = new ArrayList<>();
+      Iterator<String> cmap_iter = column_map.keys();
+
+      while (cmap_iter.hasNext()) {
+        String next = cmap_iter.next();
+        cmap_values.add(column_map.getString(next));
+      }
+
+      Set<String> cmap_values_set = new HashSet<>(cmap_values);
+
+      Connection conn = DriverManager.getConnection(m_url);
+      Statement stmt = conn.createStatement();
+      ResultSet rs =
+          stmt.executeQuery(
+              "SELECT table_description from dcs_plugin where id = " + nrs.getInt("dcs_plugin_id"));
+
+      String table_descriptoin_str = rs.getString("table_description");
+      JSONObject table_descriptoin = new JSONObject(table_descriptoin_str);
+      JSONArray table_descriptoin_columns = table_descriptoin.getJSONArray("columns");
+      Iterator<Object> iter = table_descriptoin_columns.iterator();
+      /** the value of the map must in the table description. */
+      Set<String> kuduTableColumnNames = new HashSet<>();
+      while (iter.hasNext()) {
+        JSONObject next = (JSONObject) iter.next();
+        kuduTableColumnNames.add(next.getString("name"));
+      }
+
+      if (!cmap_values_set.equals(kuduTableColumnNames)) {
+        throw new SQLException(COLUMN_MAP_ERROR_MESSAGE + "***** The column_map and table_description doent's match");
+      }
+
     } catch (JSONException e) {
       throw new SQLException(COLUMN_MAP_ERROR_MESSAGE + "*****" + e.getMessage());
     }
