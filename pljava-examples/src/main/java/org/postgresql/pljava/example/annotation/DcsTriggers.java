@@ -32,7 +32,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -250,20 +249,26 @@ public class DcsTriggers {
       ResultSet rs =
           stmt.executeQuery(
               "SELECT table_description from dcs_plugin where id = " + nrs.getInt("dcs_plugin_id"));
+      if (rs.next()) {
+        String table_descriptoin_str = rs.getString("table_description");
+        JSONObject table_descriptoin = new JSONObject(table_descriptoin_str);
+        JSONArray table_descriptoin_columns = table_descriptoin.getJSONArray("columns");
+        Iterator<Object> iter = table_descriptoin_columns.iterator();
+        /** the value of the map must in the table description. */
+        Set<String> kuduTableColumnNames = new HashSet<>();
+        while (iter.hasNext()) {
+          JSONObject next = (JSONObject) iter.next();
+          kuduTableColumnNames.add(next.getString("name"));
+        }
 
-      String table_descriptoin_str = rs.getString("table_description");
-      JSONObject table_descriptoin = new JSONObject(table_descriptoin_str);
-      JSONArray table_descriptoin_columns = table_descriptoin.getJSONArray("columns");
-      Iterator<Object> iter = table_descriptoin_columns.iterator();
-      /** the value of the map must in the table description. */
-      Set<String> kuduTableColumnNames = new HashSet<>();
-      while (iter.hasNext()) {
-        JSONObject next = (JSONObject) iter.next();
-        kuduTableColumnNames.add(next.getString("name"));
-      }
-
-      if (!cmap_values_set.equals(kuduTableColumnNames)) {
-        throw new SQLException(COLUMN_MAP_ERROR_MESSAGE + "***** The column_map and table_description doent's match");
+        if (!cmap_values_set.equals(kuduTableColumnNames)) {
+          throw new SQLException(
+              COLUMN_MAP_ERROR_MESSAGE
+                  + "***** The column_map and table_description doent's match");
+        }
+      } else {
+        throw new SQLException(
+            "when insert dcs_plugin_instance, the dcs_plugin_id is not set, how is it possible!");
       }
 
     } catch (JSONException e) {
