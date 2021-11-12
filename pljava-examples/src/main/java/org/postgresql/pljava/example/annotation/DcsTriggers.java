@@ -234,15 +234,20 @@ public class DcsTriggers {
         throw new SQLException(COLUMN_MAP_ERROR_MESSAGE);
       }
 
-      List<String> cmap_values = new ArrayList<>();
-      Iterator<String> cmap_iter = column_map.keys();
+      List<String> cmap_keys_list = new ArrayList<>();
+      Iterator<String> cmap_key_iter = column_map.keys();
 
-      while (cmap_iter.hasNext()) {
-        String next = cmap_iter.next();
-        cmap_values.add(column_map.getString(next));
+      while (cmap_key_iter.hasNext()) {
+        String next = cmap_key_iter.next();
+        cmap_keys_list.add(next);
       }
 
-      Set<String> cmap_values_set = new HashSet<>(cmap_values);
+      Set<String> cmap_keys_set = new HashSet<>(cmap_keys_list);
+
+      if (cmap_keys_set.size() != cmap_keys_list.size()) {
+        throw new SQLException(
+            "column_map has duplicate keys.");
+      }
 
       Connection conn = DriverManager.getConnection(m_url);
       Statement stmt = conn.createStatement();
@@ -261,7 +266,7 @@ public class DcsTriggers {
           kuduTableColumnNames.add(next.getString("name"));
         }
 
-        if (!kuduTableColumnNames.containsAll(cmap_values_set)) {
+        if (!kuduTableColumnNames.containsAll(cmap_keys_set)) {
           throw new SQLException(
               COLUMN_MAP_ERROR_MESSAGE
                   + "***** The table_description columns must contains all column_map values.");
