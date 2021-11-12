@@ -261,10 +261,10 @@ public class DcsTriggers {
           kuduTableColumnNames.add(next.getString("name"));
         }
 
-        if (!cmap_values_set.equals(kuduTableColumnNames)) {
+        if (!kuduTableColumnNames.containsAll(cmap_values_set)) {
           throw new SQLException(
               COLUMN_MAP_ERROR_MESSAGE
-                  + "***** The column_map and table_description doent's match");
+                  + "***** The table_description columns must contains all column_map values.");
         }
       } else {
         throw new SQLException(
