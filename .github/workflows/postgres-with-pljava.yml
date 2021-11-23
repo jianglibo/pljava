@@ -8,7 +8,10 @@ name: Postgresql with Pljava plugin
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ REL1_6_STABLE ]
+    branches:
+      - REL1_6_STABLE
+    tags: 
+      - dv*
 #   pull_request:
 #     branches: [ master ]
 
