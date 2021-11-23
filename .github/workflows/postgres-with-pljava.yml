@@ -1,4 +1,5 @@
 # This is a basic workflow to help you get started with Actions
+# git push origin v3
 
 name: Postgresql with Pljava plugin
 
@@ -53,7 +54,7 @@ jobs:
         password: ${{ secrets.RESP_ME_PASS }}
     - name: Extract metadata (tags, labels) for Docker
       id: meta
-      uses: docker/metadata-action@v1
+      uses: docker/metadata-action@v3
       with:
         images: ${{ env.BUILDER_RESP_ME }}/${{ env.IMAGE_NAME }}
 
