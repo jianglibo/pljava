@@ -3,6 +3,11 @@
 remove example.ddr in the file MANIFEST.MF.
 mvn -pl pljava-examples -am clean install
 
+cp pljava-examples/target/pljava-examples-1.6-SNAPSHOT.jar ../focus_dcs/minikube/postgres/
+
+docker build -t builder.resp.me/postgresql_11_with_java_11:v1 ./
+docker push builder.resp.me/postgresql_11_with_java_11:v1
+
 jar tf .\pljava-examples\target\pljava-examples-1.6-SNAPSHOT.jar
 
 SELECT * FROM pg_language WHERE lanname LIKE 'java%';
